@@ -116,6 +116,17 @@ namespace DataTables.AspNet.AspNetCore
       if (options.IsRequestAdditionalParametersEnabled && parseAditionalParameters != null)
       {
         var aditionalParameters = parseAditionalParameters(bindingContext);
+        
+        // Parse columnControl data from raw form values
+        var columnControlData = ParseColumnControlData(bindingContext);
+        if (columnControlData.Any())
+        {
+          if (aditionalParameters == null)
+            aditionalParameters = new Dictionary<string, object>();
+          
+          aditionalParameters["columnControl"] = columnControlData;
+        }
+        
         var model = new DataTablesRequest(_draw, _start, _length, search, columns, aditionalParameters);
         {
           //return ModelBindingResult.Success(bindingContext.ModelName, model);
@@ -125,10 +136,24 @@ namespace DataTables.AspNet.AspNetCore
       }
       else
       {
-        var model = new DataTablesRequest(_draw, _start, _length, search, columns);
+        // Even without custom ParseAdditionalParameters, we still want to parse columnControl
+        var columnControlData = ParseColumnControlData(bindingContext);
+        
+        if (columnControlData.Any())
+        {
+          var aditionalParameters = new Dictionary<string, object>
+          {
+            ["columnControl"] = columnControlData
+          };
+          var model = new DataTablesRequest(_draw, _start, _length, search, columns, aditionalParameters);
+          bindingContext.Result = ModelBindingResult.Success(model);
+          return;
+        }
+        
+        var modelWithoutParams = new DataTablesRequest(_draw, _start, _length, search, columns);
         {
           //return ModelBindingResult.Success(bindingContext.ModelName, model);
-          bindingContext.Result = ModelBindingResult.Success(model);
+          bindingContext.Result = ModelBindingResult.Success(modelWithoutParams);
           return;
         }
       }
@@ -139,6 +164,96 @@ namespace DataTables.AspNet.AspNetCore
     /// You have to implement this to populate 'IDataTablesRequest' object with aditional (user-defined) request values.
     /// </summary>
     public Func<ModelBindingContext, IDictionary<string, object>> ParseAdditionalParameters;
+
+    /// <summary>
+    /// Parses columnControl data from DataTables extensions (like columnControl plugin).
+    /// Extracts columns[i][columnControl][list][j] and other columnControl parameters.
+    /// </summary>
+    /// <param name="bindingContext">The model binding context.</param>
+    /// <returns>Dictionary with column names as keys and their columnControl data as values.</returns>
+    private static IDictionary<string, object> ParseColumnControlData(ModelBindingContext bindingContext)
+    {
+      var result = new Dictionary<string, object>();
+      
+      try
+      {
+        var request = bindingContext.HttpContext.Request;
+        if (!request.HasFormContentType) return result;
+
+        var form = request.Form;
+        var columnData = new Dictionary<int, Dictionary<string, object>>();
+
+        // Parse all form keys looking for columnControl data
+        foreach (var key in form.Keys)
+        {
+          // Pattern: columns[i][columnControl][property]
+          // or: columns[i][columnControl][list][j]
+          var match = System.Text.RegularExpressions.Regex.Match(
+            key, 
+            @"columns\[(\d+)\]\[columnControl\]\[([^\]]+)\](?:\[(\d+)\])?");
+            
+          if (match.Success)
+          {
+            var columnIndex = int.Parse(match.Groups[1].Value);
+            var propertyName = match.Groups[2].Value;
+            var listIndex = match.Groups[3].Success ? match.Groups[3].Value : null;
+
+            // Get the column field name
+            var fieldKey = $"columns[{columnIndex}][data]";
+            if (!form.ContainsKey(fieldKey)) continue;
+            
+            var fieldName = form[fieldKey].ToString();
+            if (string.IsNullOrWhiteSpace(fieldName)) continue;
+
+            // Initialize column data structure
+            if (!columnData.ContainsKey(columnIndex))
+            {
+              columnData[columnIndex] = new Dictionary<string, object>
+              {
+                ["fieldName"] = fieldName
+              };
+            }
+
+            var columnControlData = columnData[columnIndex];
+
+            // Handle list values (array data)
+            if (!string.IsNullOrWhiteSpace(listIndex) && propertyName == "list")
+            {
+              if (!columnControlData.ContainsKey("list"))
+              {
+                columnControlData["list"] = new List<string>();
+              }
+              
+              var list = (List<string>)columnControlData["list"];
+              var value = form[key].ToString();
+              if (!string.IsNullOrWhiteSpace(value))
+              {
+                list.Add(value);
+              }
+            }
+            else
+            {
+              // Handle other columnControl properties
+              columnControlData[propertyName] = form[key].ToString();
+            }
+          }
+        }
+
+        // Convert indexed data to field-name-keyed dictionary
+        foreach (var kvp in columnData)
+        {
+          var fieldName = kvp.Value["fieldName"].ToString();
+          kvp.Value.Remove("fieldName");
+          result[fieldName] = kvp.Value;
+        }
+      }
+      catch (Exception)
+      {
+        // Fail silently - columnControl data is optional
+      }
+
+      return result;
+    }
 
     /// <summary>
     /// For internal use only.
