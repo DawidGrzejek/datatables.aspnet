@@ -38,9 +38,15 @@ namespace DataTables.AspNet.WebApi2
         public bool IsSearchable { get; private set; }
         public ISort Sort { get; private set; }
         public bool IsSortable { get; private set; }
+        public IDictionary<string, object> AdditionalData { get; private set; }
 
 
         public Column(string name, string field, bool searchable, bool sortable, ISearch search)
+            : this(name, field, searchable, sortable, search, null)
+        {
+        }
+
+        public Column(string name, string field, bool searchable, bool sortable, ISearch search, IDictionary<string, object> additionalData)
         {
             Name = name;
             Field = field;
@@ -49,6 +55,8 @@ namespace DataTables.AspNet.WebApi2
             IsSearchable = searchable;
             if (!IsSearchable) Search = null;
             else Search = search ?? new Search(field);
+
+            AdditionalData = additionalData ?? new Dictionary<string, object>();
         }
 
 

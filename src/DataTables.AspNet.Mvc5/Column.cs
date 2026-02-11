@@ -40,8 +40,14 @@ namespace DataTables.AspNet.Mvc5
         public bool IsSearchable { get; }
         public ISort Sort { get; private set; }
         public bool IsSortable { get; }
+        public IDictionary<string, object> AdditionalData { get; }
 
         public Column(string name, string field, bool searchable, bool sortable, ISearch search)
+            : this(name, field, searchable, sortable, search, null)
+        {
+        }
+
+        public Column(string name, string field, bool searchable, bool sortable, ISearch search, IDictionary<string, object> additionalData)
         {
             Name = name;
             Field = field;
@@ -50,6 +56,8 @@ namespace DataTables.AspNet.Mvc5
             IsSearchable = searchable;
             if (!IsSearchable) Search = null;
             else Search = search ?? new Search(field);
+
+            AdditionalData = additionalData ?? new Dictionary<string, object>();
         }
 
         public bool SetSort(int order, string direction)

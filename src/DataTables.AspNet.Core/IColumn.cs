@@ -23,6 +23,8 @@ THE SOFTWARE.
 */
 #endregion Copyright
 
+using System.Collections.Generic;
+
 namespace DataTables.AspNet.Core
 {
     /// <summary>
@@ -55,7 +57,10 @@ namespace DataTables.AspNet.Core
         /// </summary>
         ISort Sort { get; }
 
-
+        /// <summary>
+        /// Gets additional data for this column (e.g., columnControl data from DataTables extensions).
+        /// </summary>
+        IDictionary<string, object> AdditionalData { get; }
 
         /// <summary>
         /// Sets column sort definition.

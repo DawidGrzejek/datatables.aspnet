@@ -110,50 +110,23 @@ namespace DataTables.AspNet.AspNetCore
       var search = new Search(_searchValue, _searchRegex);
 
       // Parse columns & column sorting.
-      var columns = ParseColumns(values, options.RequestNameConvention);
+      var columns = ParseColumns(values, options.RequestNameConvention, bindingContext);
       var sorting = ParseSorting(columns, values, options.RequestNameConvention);
 
       if (options.IsRequestAdditionalParametersEnabled && parseAditionalParameters != null)
       {
         var aditionalParameters = parseAditionalParameters(bindingContext);
-        
-        // Parse columnControl data from raw form values
-        var columnControlData = ParseColumnControlData(bindingContext);
-        if (columnControlData.Any())
-        {
-          if (aditionalParameters == null)
-            aditionalParameters = new Dictionary<string, object>();
-          
-          aditionalParameters["columnControl"] = columnControlData;
-        }
-        
         var model = new DataTablesRequest(_draw, _start, _length, search, columns, aditionalParameters);
         {
-          //return ModelBindingResult.Success(bindingContext.ModelName, model);
           bindingContext.Result = ModelBindingResult.Success(model);
           return;
         }
       }
       else
       {
-        // Even without custom ParseAdditionalParameters, we still want to parse columnControl
-        var columnControlData = ParseColumnControlData(bindingContext);
-        
-        if (columnControlData.Any())
+        var model = new DataTablesRequest(_draw, _start, _length, search, columns);
         {
-          var aditionalParameters = new Dictionary<string, object>
-          {
-            ["columnControl"] = columnControlData
-          };
-          var model = new DataTablesRequest(_draw, _start, _length, search, columns, aditionalParameters);
           bindingContext.Result = ModelBindingResult.Success(model);
-          return;
-        }
-        
-        var modelWithoutParams = new DataTablesRequest(_draw, _start, _length, search, columns);
-        {
-          //return ModelBindingResult.Success(bindingContext.ModelName, model);
-          bindingContext.Result = ModelBindingResult.Success(modelWithoutParams);
           return;
         }
       }
@@ -166,12 +139,16 @@ namespace DataTables.AspNet.AspNetCore
     public Func<ModelBindingContext, IDictionary<string, object>> ParseAdditionalParameters;
 
     /// <summary>
-    /// Parses columnControl data from DataTables extensions (like columnControl plugin).
-    /// Extracts columns[i][columnControl][list][j] and other columnControl parameters.
+    /// Parses columnControl data for a specific column from DataTables extensions.
+    /// Extracts columns[columnIndex][columnControl][...] and builds nested structure.
+    /// Examples:
+    ///   columns[4][columnControl][list][0] -> { "list": ["value"] }
+    ///   columns[4][columnControl][search][value] -> { "search": { "value": "..." } }
     /// </summary>
     /// <param name="bindingContext">The model binding context.</param>
-    /// <returns>Dictionary with column names as keys and their columnControl data as values.</returns>
-    private static IDictionary<string, object> ParseColumnControlData(ModelBindingContext bindingContext)
+    /// <param name="columnIndex">The column index to parse data for.</param>
+    /// <returns>Dictionary with columnControl data for this specific column.</returns>
+    private static IDictionary<string, object> ParseColumnControlDataForColumn(ModelBindingContext bindingContext, int columnIndex)
     {
       var result = new Dictionary<string, object>();
       
@@ -181,70 +158,32 @@ namespace DataTables.AspNet.AspNetCore
         if (!request.HasFormContentType) return result;
 
         var form = request.Form;
-        var columnData = new Dictionary<int, Dictionary<string, object>>();
 
-        // Parse all form keys looking for columnControl data
+        // Parse all form keys looking for columnControl data for this specific column
+        var columnPattern = $@"^columns\[{columnIndex}\]\[columnControl\](.+)$";
+        
         foreach (var key in form.Keys)
         {
-          // Pattern: columns[i][columnControl][property]
-          // or: columns[i][columnControl][list][j]
-          var match = System.Text.RegularExpressions.Regex.Match(
-            key, 
-            @"columns\[(\d+)\]\[columnControl\]\[([^\]]+)\](?:\[(\d+)\])?");
+          // Pattern: columns[columnIndex][columnControl][path...]
+          var match = System.Text.RegularExpressions.Regex.Match(key, columnPattern);
             
-          if (match.Success)
+          if (!match.Success) continue;
+
+          var pathPart = match.Groups[1].Value; // e.g., "[list][0]" or "[search][value]"
+          var value = form[key].ToString();
+
+          // Parse the path: "[list][0]" or "[search][value]" etc.
+          var pathMatches = System.Text.RegularExpressions.Regex.Matches(pathPart, @"\[([^\]]+)\]");
+          if (pathMatches.Count == 0) continue;
+
+          var pathSegments = new List<string>();
+          foreach (System.Text.RegularExpressions.Match pm in pathMatches)
           {
-            var columnIndex = int.Parse(match.Groups[1].Value);
-            var propertyName = match.Groups[2].Value;
-            var listIndex = match.Groups[3].Success ? match.Groups[3].Value : null;
-
-            // Get the column field name
-            var fieldKey = $"columns[{columnIndex}][data]";
-            if (!form.ContainsKey(fieldKey)) continue;
-            
-            var fieldName = form[fieldKey].ToString();
-            if (string.IsNullOrWhiteSpace(fieldName)) continue;
-
-            // Initialize column data structure
-            if (!columnData.ContainsKey(columnIndex))
-            {
-              columnData[columnIndex] = new Dictionary<string, object>
-              {
-                ["fieldName"] = fieldName
-              };
-            }
-
-            var columnControlData = columnData[columnIndex];
-
-            // Handle list values (array data)
-            if (!string.IsNullOrWhiteSpace(listIndex) && propertyName == "list")
-            {
-              if (!columnControlData.ContainsKey("list"))
-              {
-                columnControlData["list"] = new List<string>();
-              }
-              
-              var list = (List<string>)columnControlData["list"];
-              var value = form[key].ToString();
-              if (!string.IsNullOrWhiteSpace(value))
-              {
-                list.Add(value);
-              }
-            }
-            else
-            {
-              // Handle other columnControl properties
-              columnControlData[propertyName] = form[key].ToString();
-            }
+            pathSegments.Add(pm.Groups[1].Value);
           }
-        }
 
-        // Convert indexed data to field-name-keyed dictionary
-        foreach (var kvp in columnData)
-        {
-          var fieldName = kvp.Value["fieldName"].ToString();
-          kvp.Value.Remove("fieldName");
-          result[fieldName] = kvp.Value;
+          // Navigate/create the nested structure
+          SetNestedValue(result, pathSegments, value);
         }
       }
       catch (Exception)
@@ -256,13 +195,75 @@ namespace DataTables.AspNet.AspNetCore
     }
 
     /// <summary>
+    /// Helper method to set a value in a nested dictionary structure using a path.
+    /// Handles both object properties and array indices.
+    /// </summary>
+    private static void SetNestedValue(Dictionary<string, object> root, List<string> pathSegments, string value)
+    {
+      if (pathSegments.Count == 0) return;
+
+      Dictionary<string, object> current = root;
+      
+      for (int i = 0; i < pathSegments.Count - 1; i++)
+      {
+        var segment = pathSegments[i];
+        var nextSegment = pathSegments[i + 1];
+        
+        // Check if next segment is a numeric index (array)
+        if (int.TryParse(nextSegment, out _))
+        {
+          // Current segment should contain a list
+          if (!current.ContainsKey(segment))
+          {
+            current[segment] = new List<string>();
+          }
+          
+          // If it's a list, we'll add to it in the next iteration
+          // Skip to the last segment
+          i++; // Skip the index segment
+          var list = current[segment] as List<string>;
+          if (list != null && !string.IsNullOrWhiteSpace(value))
+          {
+            list.Add(value);
+          }
+          return;
+        }
+        else
+        {
+          // Current segment is a nested object
+          if (!current.ContainsKey(segment))
+          {
+            current[segment] = new Dictionary<string, object>();
+          }
+          
+          current = current[segment] as Dictionary<string, object>;
+          if (current == null) return; // Safety check
+        }
+      }
+
+      // Set the final value
+      var lastSegment = pathSegments[pathSegments.Count - 1];
+      
+      // Check if it's an array index
+      if (int.TryParse(lastSegment, out _))
+      {
+        // This shouldn't happen if the logic above is correct
+        // but handle it gracefully
+        return;
+      }
+      
+      current[lastSegment] = value;
+    }
+
+    /// <summary>
     /// For internal use only.
     /// Parse column collection.
     /// </summary>
     /// <param name="values">Request parameters.</param>
     /// <param name="names">Name convention for request parameters.</param>
+    /// <param name="bindingContext">The model binding context (for parsing additional column data).</param>
     /// <returns></returns>
-    private static IEnumerable<IColumn> ParseColumns(IValueProvider values, IRequestNameConvention names)
+    private static IEnumerable<IColumn> ParseColumns(IValueProvider values, IRequestNameConvention names, ModelBindingContext bindingContext)
     {
       var columns = new List<IColumn>();
 
@@ -301,8 +302,11 @@ namespace DataTables.AspNet.AspNetCore
 
         var search = new Search(_columnSearchValue, _columnSearchRegex);
 
-        // Instantiates a new column with parsed elements.
-        var column = new Column(_columnName, _columnField, _columnSearchable, _columnSortable, search);
+        // Parse columnControl data for this specific column
+        var columnControlData = ParseColumnControlDataForColumn(bindingContext, counter);
+
+        // Instantiates a new column with parsed elements including additional data.
+        var column = new Column(_columnName, _columnField, _columnSearchable, _columnSortable, search, columnControlData);
 
         // Adds the column to the return collection.
         columns.Add(column);
