@@ -273,12 +273,16 @@ namespace DataTables.AspNet.AspNetCore
         // Parses Field value.
         var columnField = values.GetValue(String.Format(names.ColumnField, counter));
         string _columnField = null;
-        if (!Parse<string>(columnField, out _columnField)) break;
+        Parse<string>(columnField, out _columnField);
 
         // Parses Name value.
         var columnName = values.GetValue(String.Format(names.ColumnName, counter));
         string _columnName = null;
         Parse<string>(columnName, out _columnName);
+
+        // Stop only when there is no usable column metadata.
+        // Some DataTables setups intentionally send an empty data field and rely on name.
+        if (string.IsNullOrWhiteSpace(_columnField) && string.IsNullOrWhiteSpace(_columnName)) break;
 
         // Parses Orderable value.
         var columnSortable = values.GetValue(String.Format(names.IsColumnSortable, counter));
