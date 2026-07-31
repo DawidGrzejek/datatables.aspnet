@@ -1,8 +1,5 @@
 ﻿using Microsoft.AspNetCore.Hosting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
 
 namespace DataTables.AspNet.Samples.AspNetCore.BasicIntegration
 {
@@ -10,11 +7,11 @@ namespace DataTables.AspNet.Samples.AspNetCore.BasicIntegration
     {
         public static void Main(string[] args)
         {
-            var host = new WebHostBuilder()
-                .UseKestrel()
-                .UseContentRoot(System.IO.Directory.GetCurrentDirectory())
-                .UseIISIntegration()
-                .UseStartup<Startup>()
+            var host = Host.CreateDefaultBuilder(args)
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseStartup<Startup>();
+                })
                 .Build();
 
             host.Run();

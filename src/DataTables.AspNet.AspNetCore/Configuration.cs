@@ -28,8 +28,6 @@ using System.Collections.Generic;
 using DataTables.AspNet.Core;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
-using System.Linq;
 
 namespace DataTables.AspNet.AspNetCore
 {

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Core elements for DataTables.AspNet - Extended for .NET 9.0 with columnControl support.</Description>
+    <Description>Core elements for DataTables.AspNet - Extended for .NET 10.0 with columnControl support.</Description>
     <Copyright>2014-2022 Anderson Matos (MIT License) - Extended 2026</Copyright>
     <AssemblyTitle>DataTables.AspNet.Core.Extended</AssemblyTitle>
     <NeutralLanguage>en-US</NeutralLanguage>
@@ -10,12 +10,12 @@
     <AssemblyName>DataTables.AspNet.Core</AssemblyName>
     <PackageId>DataTables.AspNet.Core.Extended</PackageId>
     <PackageTags>DataTables;DataTables.Mvc;DataTables.AspNet;Mvc;AspNet;WebApi;columnControl</PackageTags>
-    <PackageReleaseNotes>Extended for .NET 9.0 with full columnControl and DataTables extensions support.</PackageReleaseNotes>
+    <PackageReleaseNotes>Extended for .NET 10.0 with full columnControl and DataTables extensions support.</PackageReleaseNotes>
 	<PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/ALMMa/datatables.aspnet</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/ALMMa/datatables.aspnet</RepositoryUrl>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
   </PropertyGroup>
 

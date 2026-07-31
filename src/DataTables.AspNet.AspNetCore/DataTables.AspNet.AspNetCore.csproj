@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <Description>AspNetCore implementation for DataTables.AspNet - Extended for .NET 9.0 with columnControl support.</Description>
+    <Description>AspNetCore implementation for DataTables.AspNet - Extended for .NET 10.0 with columnControl support.</Description>
     <Copyright>2014-2016 Anderson Matos (MIT License) - Extended 2026</Copyright>
     <AssemblyTitle>DataTables.AspNet.AspNetCore.Extended</AssemblyTitle>
     <NeutralLanguage>en-US</NeutralLanguage>
@@ -10,13 +10,13 @@
     <AssemblyName>DataTables.AspNet.AspNetCore</AssemblyName>
     <PackageId>DataTables.AspNet.AspNetCore.Extended</PackageId>
     <PackageTags>DataTables;DataTables.Mvc;DataTables.AspNet;AspNetCore;columnControl</PackageTags>
-    <PackageReleaseNotes>Extended for .NET 9.0 with full columnControl parsing and DataTables extensions support.</PackageReleaseNotes>
+    <PackageReleaseNotes>Extended for .NET 10.0 with full columnControl parsing and DataTables extensions support.</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/ALMMa/datatables.aspnet</PackageProjectUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/ALMMa/datatables.aspnet</RepositoryUrl>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <OutputType>Library</OutputType>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 		<IsPackable>true</IsPackable>

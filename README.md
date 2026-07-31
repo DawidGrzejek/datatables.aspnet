@@ -1,6 +1,6 @@
 <h1>Datatables.AspNet</h1>
 Formely known as <strong>DataTables.Mvc</strong>, this project startedwith small objectives around 2014, aiming to provide intermediate and experienced developers a tool to avoid the boring process of handling DataTables parameters.<br />
-More than a year later and after a full rewrite we are now proud to support Asp.net MVC, WebApi and Asp.Net Core (full .NET Core support).<br />
+More than a year later and after a full rewrite we are now proud to support ASP.NET Core (full .NET support).<br />
 Unit-testing is a priority to avoid breaking <i>your</i> app and every stable release should provide better and wider test cases.
 
 <h3>Stable 2.0.0 version is here!</h3>
@@ -9,17 +9,9 @@ This is the first stable version for `DataTables.AspNet`. We dropped the full mi
 
 <h3>Standard NuGet packages</h3>
 
-- [DataTables.AspNet.Mvc5](https://www.nuget.org/packages/DataTables.AspNet.Mvc5/) with support for Mvc5, registration and automatic binders
-
-- [DataTables.AspNet.WebApi2](https://www.nuget.org/packages/DataTables.AspNet.WebApi2/) with support for WebApi2, registration and automatic binders
-
 - [DataTables.AspNet.AspNetCore](https://www.nuget.org/packages/DataTables.AspNet.AspNetCore/) with support for AspNetCore, dependency injection and automatic binders
 
-<h3>IMPORTANT: Deprecated (unlisted) package</h3>
-
-- [DataTables.AspNet.AspNet5](https://www.nuget.org/packages/DataTables.AspNet.AspNet5/)
-
-This package has been replaced by DataTables.AspNet.AspNetCore due to Microsoft renaming of the new platform.
+- [DataTables.AspNet.Core](https://www.nuget.org/packages/DataTables.AspNet.Core/) with shared core abstractions used by the ASP.NET Core package
 
 <h3>Write your own code!</h3>
 
@@ -49,7 +41,7 @@ For production code, I do recommend the `master` branch. It holds the stable ver
 
 <h3>Still legacy?</h3>
 Drop it!<br />
-2.0.0 (stable) is faster, better coded and fully tested. DataTables.Mvc is now completely discontinued.
+2.0.0 (stable) is faster, better coded and fully tested. DataTables.Mvc and the old WebApi2/Mvc5 packages are legacy and no longer part of the modern ASP.NET Core path.
 
 <h3>Known issues</h3>
 - There are some issues while trying to run all tests simultaneously. I'll try to fix that by including some test ordering.

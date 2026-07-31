@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <VersionPrefix>2.0.2</VersionPrefix>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <AssemblyName>DataTables.AspNet.Samples.AspNetCore.BasicIntegration</AssemblyName>
     <OutputType>Library</OutputType>
@@ -19,16 +19,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\DataTables.AspNet.Core\DataTables.AspNet.Core.csproj" />
     <ProjectReference Include="..\..\src\DataTables.AspNet.AspNetCore\DataTables.AspNet.AspNetCore.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Diagnostics" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.TagHelpers" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Server.IISIntegration" Version="2.2.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Razor" Version="2.2.0" />
   </ItemGroup>
 
   <Target Name="PrepublishScript" BeforeTargets="PrepareForPublish">
