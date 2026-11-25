@@ -1,0 +1,50 @@
+name: Publish NuGet packages
+
+# Publishes DataTables.AspNet.Core.Extended and DataTables.AspNet.AspNetCore.Extended
+# to nuget.org when a version tag (e.g. v2.1.1) is pushed.
+# Authentication uses nuget.org Trusted Publishing (OIDC) - no long-lived API key.
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+permissions:
+  contents: write   # create the GitHub Release
+  id-token: write   # OIDC token for nuget.org Trusted Publishing
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Resolve version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Pack
+        run: |
+          for p in DataTables.AspNet.Core DataTables.AspNet.AspNetCore; do
+            dotnet pack "src/$p/$p.csproj" -c Release -p:Version="$VERSION" -o artifacts
+          done
+
+      - name: Log in to nuget.org (Trusted Publishing)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ vars.NUGET_USER }}
+
+      - name: Push to nuget.org
+        run: >
+          dotnet nuget push "artifacts/*.nupkg"
+          --api-key "${{ steps.login.outputs.NUGET_API_KEY }}"
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" artifacts/*.nupkg --title "$GITHUB_REF_NAME" --generate-notes
